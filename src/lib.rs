@@ -821,12 +821,12 @@ impl Default for Settings {
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Sample {
-    /// Temperature reading in celsius.
-    pub temperature: f32,
+    /// Temperature reading in celsius. * 100
+    pub temperature: i16,
     /// Pressure reading in pascal.
-    pub pressure: f32,
+    pub pressure: u32,
     /// Humidity in perfect relative.
-    pub humidity: f32,
+    pub humidity: u8,
 }
 
 impl Sample {
@@ -861,8 +861,7 @@ impl Sample {
 
         let t_fine: i32 = var1 + var2;
 
-        let temperatue: i32 = (t_fine * 5 + 128) >> 8;
-        let temperature: f32 = (temperatue as f32) / 100.0;
+        let temperature = ((t_fine * 5 + 128) >> 8) as i16;
 
         let var1: i64 = (t_fine as i64) - 128000;
         let var2: i64 = var1 * var1 * (cal.p6 as i64);
@@ -870,8 +869,8 @@ impl Sample {
         let var2: i64 = var2 + ((cal.p4 as i64) << 35);
         let var1: i64 = ((var1 * var1 * (cal.p3 as i64)) >> 8) + ((var1 * (cal.p2 as i64)) << 12);
         let var1: i64 = ((((1i64) << 47) + var1) * (cal.p1 as i64)) >> 33;
-        let pressure: f32 = if var1 == 0 {
-            0.0
+        let pressure  = if var1 == 0 {
+            0
         } else {
             let var3: i64 = 1048576 - (p as i64);
             let var3: i64 = (((var3 << 31) - var2) * 3125) / var1;
@@ -879,7 +878,7 @@ impl Sample {
             let var2: i64 = ((cal.p8 as i64) * var3) >> 19;
 
             let var3: i64 = ((var3 + var1 + var2) >> 8) + ((cal.p7 as i64) << 4);
-            (var3 as f32) / 256.0
+            (var3 / 256) as u32
         };
 
         let var1: i32 = t_fine - 76800i32;
@@ -895,7 +894,7 @@ impl Sample {
         let var1: i32 = var1 - (((((var1 >> 15) * (var1 >> 15)) >> 7) * (cal.h1 as i32)) >> 4);
         let var1: i32 = if var1 < 0 { 0 } else { var1 };
         let var1: i32 = if var1 > 419430400 { 419430400 } else { var1 };
-        let humidity: f32 = ((var1 >> 12) as f32) / 1024.0;
+        let humidity = ((var1 >> 12) / 1024) as u8;
 
         Ok(Sample {
             temperature,
